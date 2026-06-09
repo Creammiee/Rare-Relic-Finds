@@ -97,7 +97,7 @@ export default async function MarketplacePage({
           {/* Sidebar Filters */}
           <aside className="hidden lg:block w-64 shrink-0">
             <Suspense>
-              <MarketplaceFilters categories={categories} searchParams={params} />
+              <MarketplaceFilters categories={categories} searchParams={params as Record<string, string | undefined>} />
             </Suspense>
           </aside>
 

@@ -236,7 +236,7 @@ export default async function ProductDetailPage({ params }: { params: Promise<{ 
               Customer Reviews ({product.reviews.length})
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {product.reviews.map((review: Review & { profile?: { full_name: string; avatar_url: string } }) => (
+              {product.reviews.map((review: Review & { profile?: { full_name: string | null; avatar_url: string | null } }) => (
                 <div key={review.id} className="glass rounded-xl p-5 border border-white/8">
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-gold-600 to-gold-400 flex items-center justify-center text-black-950 font-bold text-xs">

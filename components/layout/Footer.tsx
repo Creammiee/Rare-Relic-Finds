@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Gem, Twitter, Instagram, Facebook, Youtube, Mail } from 'lucide-react'
+import { Gem, Mail, Globe, Share2, Play, X } from 'lucide-react'
 
 const footerLinks = {
   Marketplace: [
@@ -32,10 +32,10 @@ const footerLinks = {
 }
 
 const socials = [
-  { icon: Twitter, href: '#', label: 'Twitter' },
-  { icon: Instagram, href: '#', label: 'Instagram' },
-  { icon: Facebook, href: '#', label: 'Facebook' },
-  { icon: Youtube, href: '#', label: 'YouTube' },
+  { icon: X, href: '#', label: 'X (Twitter)' },
+  { icon: Share2, href: '#', label: 'Instagram' },
+  { icon: Globe, href: '#', label: 'Facebook' },
+  { icon: Play, href: '#', label: 'YouTube' },
   { icon: Mail, href: 'mailto:hello@rarerelicfinds.com', label: 'Email' },
 ]
 
