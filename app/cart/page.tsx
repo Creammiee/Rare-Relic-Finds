@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { ShoppingCart, Minus, Plus, Trash2, ArrowRight, Package, Gem } from 'lucide-react'
+import { ShoppingCart, Minus, Plus, Trash2, ArrowRight, Package } from 'lucide-react'
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { CartItem } from '@/lib/types'
 import { formatCurrency } from '@/lib/utils'
@@ -26,7 +26,26 @@ export default function CartPage() {
     setLoading(false)
   }
 
-  useEffect(() => { fetchCart() }, [])
+  useEffect(() => {
+    let mounted = true
+    const loadCart = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        if (mounted) setLoading(false)
+        return
+      }
+      const { data } = await supabase
+        .from('cart_items')
+        .select('*, product:products(*, seller:sellers(store_name), category:categories(name))')
+        .eq('user_id', user.id)
+      if (mounted) {
+        setItems((data as CartItem[]) ?? [])
+        setLoading(false)
+      }
+    }
+    loadCart()
+    return () => { mounted = false }
+  }, [supabase])
 
   const updateQty = async (id: string, qty: number) => {
     if (qty < 1) return removeItem(id)
