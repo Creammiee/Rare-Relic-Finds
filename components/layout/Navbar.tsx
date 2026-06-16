@@ -20,7 +20,6 @@ import {
 const navLinks = [
   { href: '/marketplace', label: 'Marketplace' },
   { href: '/categories', label: 'Categories' },
-  { href: '/sellers', label: 'Sellers' },
   { href: '/about', label: 'About' },
 ]
 

@@ -35,7 +35,7 @@ export async function middleware(request: NextRequest) {
   const adminRoutes = ['/admin']
 
   const isUserRoute = userRoutes.some((r) => pathname.startsWith(r))
-  const isSellerRoute = sellerRoutes.some((r) => pathname.startsWith(r))
+  const isSellerRoute = pathname === '/seller' || pathname.startsWith('/seller/')
   const isAdminRoute = adminRoutes.some((r) => pathname.startsWith(r))
   const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/signup')
 
