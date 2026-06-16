@@ -30,15 +30,7 @@ async function getCategories(): Promise<Category[]> {
   return (data as Category[]) ?? []
 }
 
-async function getStats() {
-  const supabase = await createSupabaseServerClient()
-  const [{ count: products }, { count: sellers }, { count: users }] = await Promise.all([
-    supabase.from('products').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-    supabase.from('sellers').select('*', { count: 'exact', head: true }).eq('status', 'approved'),
-    supabase.from('profiles').select('*', { count: 'exact', head: true }),
-  ])
-  return { products: products ?? 0, sellers: sellers ?? 0, users: users ?? 0 }
-}
+
 
 const categoryIcons: Record<string, string> = {
   'Trading Cards': '🃏',
@@ -100,10 +92,9 @@ const testimonials = [
 ]
 
 export default async function LandingPage() {
-  const [featured, categories, stats] = await Promise.all([
+  const [featured, categories] = await Promise.all([
     getFeaturedProducts(),
     getCategories(),
-    getStats(),
   ])
 
   return (
@@ -155,20 +146,7 @@ export default async function LandingPage() {
               </Button>
             </div>
 
-            {/* Stats */}
-            <div className="flex flex-wrap items-center justify-center gap-8 sm:gap-16">
-              {[
-                { value: `${stats.products.toLocaleString()}+`, label: 'Rare Items' },
-                { value: `${stats.sellers.toLocaleString()}+`, label: 'Verified Sellers' },
-                { value: `${stats.users.toLocaleString()}+`, label: 'Collectors' },
-                { value: '120+', label: 'Countries' },
-              ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <div className="text-3xl font-display font-bold text-gold-400 text-glow-gold">{stat.value}</div>
-                  <div className="text-sm text-silver-500 mt-1">{stat.label}</div>
-                </div>
-              ))}
-            </div>
+
           </div>
         </div>
       </section>
