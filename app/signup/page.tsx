@@ -35,10 +35,13 @@ export default function SignupPage() {
     setLoading(true)
     setError('')
 
+    // Strict role validation to prevent privilege escalation via API manipulation
+    const safeRole = role === 'seller' ? 'seller' : 'user'
+
     const { data, error: err } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName, role } },
+      options: { data: { full_name: fullName, role: safeRole } },
     })
 
     if (err) {
@@ -53,11 +56,12 @@ export default function SignupPage() {
         id: data.user.id,
         email,
         full_name: fullName,
-        role,
+        role: safeRole,
+        status: 'active'
       })
 
       // If seller, create seller application
-      if (role === 'seller') {
+      if (safeRole === 'seller') {
         await supabase.from('sellers').insert({
           user_id: data.user.id,
           store_name: fullName + "'s Store",

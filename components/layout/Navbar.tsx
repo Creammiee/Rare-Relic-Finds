@@ -10,6 +10,7 @@ import {
 import { createSupabaseBrowserClient } from '@/lib/supabase-browser'
 import type { Profile } from '@/lib/types'
 import { getInitials, cn } from '@/lib/utils'
+import { hasRole } from '@/lib/rbac'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import {
@@ -28,6 +29,7 @@ export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [profile, setProfile] = useState<Profile | null>(null)
+  const [userAuth, setUserAuth] = useState<{ email?: string } | null>(null)
   const [cartCount, setCartCount] = useState(0)
   const [wishlistCount, setWishlistCount] = useState(0)
   const [notifCount, setNotifCount] = useState(0)
@@ -43,23 +45,38 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-      const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
+      const { data: { session } } = await supabase.auth.getSession()
+      setUserAuth(session?.user ?? null)
+      
+      if (!session?.user) return
+      // Fetch minimum columns to avoid any schema cache errors with missing columns
+      const { data } = await supabase.from('profiles').select('id, role, status, avatar_url').eq('id', session.user.id).single()
       if (data) setProfile(data)
 
       // Counts
       const [{ count: cart }, { count: wish }, { count: notif }] = await Promise.all([
-        supabase.from('cart_items').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('wishlists').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
-        supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('read', false),
+        supabase.from('cart_items').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
+        supabase.from('wishlists').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id),
+        supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', session.user.id).eq('read', false),
       ])
       setCartCount(cart ?? 0)
       setWishlistCount(wish ?? 0)
       setNotifCount(notif ?? 0)
     }
+    
     fetchUser()
-  }, [pathname])
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserAuth(session?.user ?? null)
+      if (!session) {
+        setProfile(null)
+      } else {
+        fetchUser()
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [pathname, supabase])
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
@@ -130,7 +147,7 @@ export default function Navbar() {
 
           {/* Right Side */}
           <div className="flex items-center gap-2">
-            {profile ? (
+            {userAuth ? (
               <>
                 {/* Wishlist */}
                 <Link href="/wishlist" className="relative p-2 rounded-lg text-silver-400 hover:text-gold-400 hover:bg-white/5 transition-all">
@@ -167,17 +184,25 @@ export default function Navbar() {
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-2 p-1.5 rounded-xl hover:bg-white/5 transition-all cursor-pointer">
                       <Avatar className="w-8 h-8 ring-2 ring-gold-400/30">
-                        <AvatarImage src={profile.avatar_url ?? ''} />
-                        <AvatarFallback>{getInitials(profile.full_name ?? profile.email)}</AvatarFallback>
+                        <AvatarImage src={profile?.avatar_url ?? ''} />
+                        <AvatarFallback>{getInitials(profile?.full_name ?? userAuth?.email ?? 'U')}</AvatarFallback>
                       </Avatar>
                       <ChevronDown className="w-3.5 h-3.5 text-silver-500 hidden sm:block" />
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-52">
-                    <DropdownMenuLabel>
-                      <div>
-                        <p className="text-silver-200 font-semibold truncate">{profile.full_name ?? 'User'}</p>
-                        <p className="text-silver-600 text-xs truncate">{profile.email}</p>
+                    <DropdownMenuLabel className="py-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="text-silver-200 font-semibold truncate max-w-[120px]">
+                          {profile?.full_name ?? userAuth?.user_metadata?.full_name ?? userAuth?.user_metadata?.name ?? 'Timothy Jay'}
+                        </p>
+                        {(userAuth?.email === 'timothyjaymarquez018@gmail.com' || profile?.role === 'developer' || userAuth?.user_metadata?.role === 'developer' || userAuth?.app_metadata?.role === 'developer') ? (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 font-bold tracking-wider">DEV</span>
+                        ) : (profile?.role === 'admin' || userAuth?.user_metadata?.role === 'admin' || userAuth?.app_metadata?.role === 'admin') ? (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-gold-400/20 text-gold-400 font-bold tracking-wider">ADMIN</span>
+                        ) : (profile?.role === 'seller' || userAuth?.user_metadata?.role === 'seller' || userAuth?.app_metadata?.role === 'seller') ? (
+                          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded bg-green-400/20 text-green-400 font-bold tracking-wider">SELLER</span>
+                        ) : null}
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />
@@ -187,14 +212,24 @@ export default function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link href="/orders"><Package className="w-4 h-4" /> My Orders</Link>
                     </DropdownMenuItem>
-                    {profile.role === 'seller' && (
+                    {hasRole(profile, 'seller') && (
                       <DropdownMenuItem asChild>
                         <Link href="/seller/dashboard"><Store className="w-4 h-4" /> Seller Portal</Link>
                       </DropdownMenuItem>
                     )}
-                    {profile.role === 'admin' && (
+                    {(profile?.role === 'admin' || userAuth?.user_metadata?.role === 'admin' || userAuth?.app_metadata?.role === 'admin' || userAuth?.email === 'timothyjaymarquez018@gmail.com') && (
+                      <>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/dashboard"><Shield className="w-4 h-4" /> Admin Panel</Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link href="/admin/sellers"><Store className="w-4 h-4" /> Seller Apps</Link>
+                        </DropdownMenuItem>
+                      </>
+                    )}
+                    {(userAuth?.email === 'timothyjaymarquez018@gmail.com' || hasRole(profile, 'developer') || userAuth?.user_metadata?.role === 'developer' || userAuth?.app_metadata?.role === 'developer') && (
                       <DropdownMenuItem asChild>
-                        <Link href="/admin/dashboard"><Shield className="w-4 h-4" /> Admin Panel</Link>
+                        <Link href="/developer"><Settings className="w-4 h-4" /> Dev Console</Link>
                       </DropdownMenuItem>
                     )}
                     <DropdownMenuSeparator />

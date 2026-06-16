@@ -1,4 +1,5 @@
-export type UserRole = 'admin' | 'seller' | 'user'
+export type UserRole = 'developer' | 'admin' | 'seller' | 'user'
+export type AccountStatus = 'active' | 'suspended' | 'banned'
 export type ProductStatus = 'pending' | 'approved' | 'rejected' | 'draft'
 export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded'
 export type TicketStatus = 'open' | 'in_progress' | 'resolved' | 'closed'
@@ -12,7 +13,11 @@ export interface Profile {
   full_name: string | null
   avatar_url: string | null
   role: UserRole
+  status: AccountStatus
   phone: string | null
+  seller_application_status: SellerStatus | null
+  approved_by: string | null
+  approved_at: string | null
   created_at: string
   updated_at: string
 }
